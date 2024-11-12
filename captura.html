@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Captura y Procesamiento de Fondo con Vercel</title>
+</head>
+<body>
+    <h1>Captura una Foto y Cambia el Fondo</h1>
+    <video id="video" width="640" height="480" autoplay></video>
+    <canvas id="canvas" width="640" height="480" style="display: none;"></canvas>
+    <button id="capture">Capturar y Procesar Foto</button>
+    <img id="result" alt="Imagen procesada" />
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const result = document.getElementById('result');
+
+        async function setupCamera() {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+            console.log("Cámara configurada correctamente.");
+        }
+
+        document.getElementById('capture').addEventListener('click', async () => {
+            // Dibuja el cuadro del video en el canvas
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Convierte el canvas a blob y envía la imagen a Vercel
+            canvas.toBlob(async (blob) => {
+                const formData = new FormData();
+                formData.append('photo', blob, 'captura.png');
+
+                try {
+                    const response = await fetch('https://tu_proyecto.vercel.app/api/procesar_imagen', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        const imageBlob = await response.blob();
+                        const imageURL = URL.createObjectURL(imageBlob);
+                        result.src = imageURL; // Mostrar la imagen procesada
+                    } else {
+                        console.error("Error al procesar la imagen:", response.statusText);
+                    }
+                } catch (error) {
+                    console.error("Error al enviar la foto:", error);
+                }
+            });
+        });
+
+        setupCamera();
+    </script>
+</body>
+</html>
